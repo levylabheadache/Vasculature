@@ -14,7 +14,7 @@ review = IP.Results.review;
 % Determine which channel to segment
 if ~isfield(expt, 'vascChan')
     warning('vascChan not specified, set to red by default')
-    vascChan = 'red'; 
+    vascChan = 'green'; 
 else
     vascChan = expt.vascChan; 
 end
@@ -57,9 +57,9 @@ if expt.Nplane > 1
 else
     if Zseg == 1
         if expt.Nruns == 1
-            catPath = projParam.path.run.reg.z{1,vascChanInd,1}; % projParam.path.run.reg.z(runs,:,Z)
+            catPath = projParam.path.run.raw.z{1,vascChanInd,1}; % projParam.path.run.reg.z(runs,:,Z)
         else
-            catPath = projParam.path.cat.reg.z{1,vascChanInd,1}; %#ok<FNDSB>
+            catPath = projParam.path.cat.reg.z{2,vascChanInd,1}; %#ok<FNDSB>
         end
         disp(catPath);
         tifStack = loadtiff(catPath);
