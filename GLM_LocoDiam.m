@@ -48,10 +48,13 @@ GLMrate = 15.49/1; %15.49/16 %number of planes, it matches the slowest sampling 
 figDir = 'D:\MATLAB\Figures\GLM_Vasculature\';  % CSD figures\
 mkdir( figDir );
 
-%% Use GLM to assess contribution of different variables
-locoDiam_pred = cell(1,Nexpt); locoDiam_resp = cell(1,Nexpt); locoDiam_opts = cell(1,Nexpt); locoDiam_result = cell(1,Nexpt); locoDiam_summary = cell(1,Nexpt);
-GLMname = 'locoDiam';
-%GLMrate = 15.49/30;
+%% Set xPresent - row number(X) within excel sheet
+
+xPresent = 73; %[18,22,24,30:32]; % flip(100:102); %45:47; % [66:69];
+Npresent = numel(xPresent);
+overwrite = false;
+
+
 for x = xPresent % x3D % 
     % GLMparallel options
     locoDiam_opts{x}.name = sprintf('%s_%s', expt{x}.name, GLMname); %strcat(expt{x}.name, , '_preCSDglm');
