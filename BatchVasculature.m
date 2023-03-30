@@ -12,8 +12,13 @@ Nexpt = size(dataTable, 1);
 dataTable(:,dataCol.date) = cellfun(@num2str, dataTable(:,dataCol.date), 'UniformOutput',false);
 
 % Initialize variables
-expt = cell(1,Nexpt); runInfo = cell(1,Nexpt); Tscan = cell(1,Nexpt); loco = cell(1,Nexpt); %vessels(x) = cell(1,Nexpt);
-vesselROI = cell(1,Nexpt); NvesselROI = cell(1,Nexpt); tifStackMax = cell(1,Nexpt);
+expt = cell(1,Nexpt); 
+runInfo = cell(1,Nexpt); 
+Tscan = cell(1,Nexpt); 
+loco = cell(1,Nexpt); %vessels(x) = cell(1,Nexpt);
+vesselROI = cell(1,Nexpt); 
+NvesselROI = cell(1,Nexpt); 
+tifStackMax = cell(1,Nexpt);
 
 % Choose which subset to  process
 xGLM = [18,22,24,30:32];
