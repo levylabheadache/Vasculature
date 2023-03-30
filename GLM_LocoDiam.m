@@ -1,4 +1,42 @@
 %% Use GLM to assess contribution of different variables
+
+% Upload data variables 
+
+% Clear any previous variables in the Workspace and Command Window to start fresh
+clear; clc; close all;
+
+% Set the directory of where animal folders are located
+dataDir =  'D:\2photon\Simone\Simone_Vasculature\'; %  'D:\2photon\Simone\Simone_Macrophages\'; %  'Z:\2photon\Simone\Simone_Macrophages\'; %  'D:\2photon\'; %  'D:\2photon\Simone\'; % 
+
+% Set excel sheet
+dataSet = 'Vasculature'; %'Macrophage'; 'AffCSD'; 'Pollen'; 'Vasculature'; %  'Astrocyte'; %  'Anatomy'; %  'Neutrophil_Simone'; %  'NGC'; % 'Neutrophil'; % 'Afferents'
+[regParam, projParam] = DefaultProcessingParams(dataSet); % get default parameters for processing various types of data
+
+regParam.method = 'affine'; %rigid, affine
+regParam.name = 'affine'; %rigid,  affine
+
+% Set data spreadsheet directory
+dataTablePath = 'R:\Levy Lab\2photon\ImagingDatasets.xlsx'; % 'R:\Levy Lab\2photon\ImagingDatasetsSimone2.xlsx';
+dataTable = readcell(dataTablePath, 'sheet',dataSet);  % 'NGC', ''
+colNames = dataTable(1,:); dataTable(1,:) = [];
+dataCol = struct('mouse',find(contains(colNames, 'Mouse')), 'date',find(contains(colNames, 'Date')), 'FOV',find(contains(colNames, 'FOV')), 'vascChan',find(contains(colNames, 'VascChan')),...
+    'volume',find(contains(colNames, 'Volume')), 'run',find(contains(colNames, 'Runs')), 'Ztop',find(contains(colNames, 'Zbot')), 'Zbot',find(contains(colNames, 'Ztop')), 'csd',find(contains(colNames, 'CSD')), ...
+    'ref',find(contains(colNames, 'Ref')), 'edges',find(contains(colNames, 'Edge')), 'Zproj',find(contains(colNames, 'Zproj')), 'done',find(contains(colNames, 'Done')));
+Nexpt = size(dataTable, 1);
+dataTable(:,dataCol.date) = cellfun(@num2str, dataTable(:,dataCol.date), 'UniformOutput',false);
+
+
+%% Set vascular experiment variables
+expt = cell(1,Nexpt); 
+runInfo = cell(1,Nexpt); 
+Tscan = cell(1,Nexpt); 
+loco = cell(1,Nexpt); % Tcat = cell(1,Nexpt);
+vesselROI = cell(1,Nexpt); 
+NvesselROI = cell(1,Nexpt); 
+tifStackMax = cell(1,Nexpt);
+
+
+%% Use GLM to assess contribution of different variables
 locoDiam_pred = cell(1,Nexpt); locoDiam_resp = cell(1,Nexpt); locoDiam_opts = cell(1,Nexpt); locoDiam_result = cell(1,Nexpt); locoDiam_summary = cell(1,Nexpt);
 GLMname = 'locoDiam';
 %GLMrate = 15.49/30;
