@@ -75,6 +75,13 @@ for x = xPresent  %30 %x2D % x2Dcsd % x3D %% 51
         xlabel('Scan') %xlabel('Time (sec)'); 
         ylabel('Diameter (\mum)');
         axis tight; axis square;
+
+        % save figure
+        figPath = sprintf('%s%s_DiameterTime', expt{x}.dir, expt{x}.name);
+    if ~exist(figPath, 'file') || overwrite
+        fprintf('\nSaving %s', figPath);
+        saveas(DiameterTime, figPath)
+    end
         pause;
     end
     
