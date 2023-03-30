@@ -59,7 +59,9 @@ for x = xPresent  %30 %x2D % x2Dcsd % x3D %% 51
         subplot(1,2,1);
         imshow(tifStackMax{x}{Z}, []);
         impixelinfo;
-        for roi = 1:NvesselROI{x}(Z), drawpolygon('Position', vesselROI{x}{Z}(roi).boxPosition.xy, 'color',colorMat(roi,:));  end
+        for roi = 1:NvesselROI{x}(Z) 
+            drawpolygon('Position', vesselROI{x}{Z}(roi).boxPosition.xy, 'color',colorMat(roi,:));  
+        end
         title( sprintf('%s Z projection %i', expt{x}.name, Z), 'Interpreter','none' )
 
         tempDiam = [vesselROI{x}{Z}.diameter];
