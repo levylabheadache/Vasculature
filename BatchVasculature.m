@@ -24,18 +24,20 @@ tifStackMax = cell(1,Nexpt);
 xGLM = [18,22,24,30:32];
 xPresent = 51; % xGLM; % [27,28]; %[18,22,24,30:32];  % , 19  1,   flip(100:102); %45:47; % [66:69]; %6;  62,64,
 Npresent = numel(xPresent);
+
 for x = xPresent  %30 %x2D % x2Dcsd % x3D %% 51
     % Experiment/run level metadata
     [expt{x}, runInfo{x}, regParams, projParam] = ParseDataTable(dataTable, x, dataCol, dataDir); % , regParams, projParam
-    %expt{x}.vascChan = 'red';
     [Tscan{x}, runInfo{x}] = GetTime(runInfo{x});
 
     % Get locomotion data
     for runs = flip(expt{x}.runs) % expt{x}.runs %
         loco{x}(runs) = GetLocoData( runInfo{x}(runs), 'show',true );
     end
-    %loco{x} = GetLocoState(expt{x}, loco{x}, 'dir',strcat(dataDir, expt{x}.mouse,'\'), 'name',expt{x}.mouse, 'var','velocity', 'show',false); %
-
+   
+    %Get locomotion state
+    loco{x} = GetLocoState(expt{x}, loco{x}, 'dir',strcat(dataDir, expt{x}.mouse,'\'), 'name',expt{x}.mouse, 'var','velocity', 'show',true); %
+    
     %[regParam.refRun, regParam.refScan] = DetermineReference(expt{x}, Tscan{x}, loco{x});
     %expt{x}.refRun = regParam.refRun; % vestigal at this point?
 
