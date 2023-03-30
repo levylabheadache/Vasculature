@@ -1,21 +1,21 @@
 %% Use GLM to assess contribution of different variables
 
-% Upload data variables 
-
 % Clear any previous variables in the Workspace and Command Window to start fresh
 clear; clc; close all;
 
-% Set the directory of where animal folders are located
+% TODO -- Set the directory of where animal folders are located
 dataDir =  'D:\2photon\Simone\Simone_Vasculature\'; %  'D:\2photon\Simone\Simone_Macrophages\'; %  'Z:\2photon\Simone\Simone_Macrophages\'; %  'D:\2photon\'; %  'D:\2photon\Simone\'; % 
 
-% Set excel sheet
+% PARSE DATA TABLE 
+
+% TODO --- Set excel sheet
 dataSet = 'Vasculature'; %'Macrophage'; 'AffCSD'; 'Pollen'; 'Vasculature'; %  'Astrocyte'; %  'Anatomy'; %  'Neutrophil_Simone'; %  'NGC'; % 'Neutrophil'; % 'Afferents'
 [regParam, projParam] = DefaultProcessingParams(dataSet); % get default parameters for processing various types of data
 
-regParam.method = 'affine'; %rigid, affine
-regParam.name = 'affine'; %rigid,  affine
+regParam.method = 'affine'; %rigid 
+regParam.name = 'affine'; %rigid  
 
-% Set data spreadsheet directory
+% TODO --- Set data spreadsheet directory
 dataTablePath = 'R:\Levy Lab\2photon\ImagingDatasets.xlsx'; % 'R:\Levy Lab\2photon\ImagingDatasetsSimone2.xlsx';
 dataTable = readcell(dataTablePath, 'sheet',dataSet);  % 'NGC', ''
 colNames = dataTable(1,:); dataTable(1,:) = [];
@@ -25,8 +25,7 @@ dataCol = struct('mouse',find(contains(colNames, 'Mouse')), 'date',find(contains
 Nexpt = size(dataTable, 1);
 dataTable(:,dataCol.date) = cellfun(@num2str, dataTable(:,dataCol.date), 'UniformOutput',false);
 
-
-%% Set vascular experiment variables
+% Initialize variables
 expt = cell(1,Nexpt); 
 runInfo = cell(1,Nexpt); 
 Tscan = cell(1,Nexpt); 
@@ -35,58 +34,87 @@ vesselROI = cell(1,Nexpt);
 NvesselROI = cell(1,Nexpt); 
 tifStackMax = cell(1,Nexpt);
 
-%% Set GLM variables
+% Use GLM to assess contribution of different variables
 locoDiam_pred = cell(1,Nexpt); %predictors
 locoDiam_resp = cell(1,Nexpt); %response
 locoDiam_opts = cell(1,Nexpt); %options
 locoDiam_result = cell(1,Nexpt); 
 locoDiam_summary = cell(1,Nexpt);
 
-GLMname = 'locoDiam';
-GLMrate = 15.49/1; %15.49/16 %number of planes, it matches the slowest sampling rate
-
-figDir = 'D:\MATLAB\Figures\GLM_Vasculature\';  % CSD figures\
-mkdir( figDir );
-
-%% Set xPresent - row number(X) within excel sheet
-
-xPresent = 73; %[18,22,24,30:32]; % flip(100:102); %45:47; % [66:69];
+% TODO --- Specify xPresent - row number(X) within excel sheet
+xPresent = 74; %[18,22,24,30:32]; % flip(100:102); %45:47; % [66:69];
 Npresent = numel(xPresent);
 overwrite = false;
 
+GLMname = 'locoDiam';
+figDir = 'D:\MATLAB\Figures\GLM_Vasculature\';  % CSD figures\
+mkdir( figDir );
+
+% Set GLM rate
+GLMrate = 15.49/1; %15.49/16 %number of planes, it matches the slowest sampling rate
 
 for x = xPresent % x3D % 
-    % GLMparallel options
+
+    % Parse data table
+    [expt{x}, runInfo{x}, regParam, projParam] = ParseDataTable(dataTable, x, dataCol, dataDir, regParam, projParam);
+    [Tscan{x}, runInfo{x}] = GetTime(runInfo{x});  % , Tcat{x}
+
+    % Load vascular data
+    [vesselROI{x}, NvesselROI{x}, tifStackMax{x}] = SegmentVasculature(expt{x}, projParam, 'overwrite',false, 'review',false );
+
+    % Set GLMparallel options
+    % housekeeping
     locoDiam_opts{x}.name = sprintf('%s_%s', expt{x}.name, GLMname); %strcat(expt{x}.name, , '_preCSDglm');
     locoDiam_opts{x}.rShow = NaN;
     locoDiam_opts{x}.figDir = ''; % figDir;
-    locoDiam_opts{x}.alpha = 0.01;  % The regularization parameter, default is 0.01
-    locoDiam_opts{x}.standardize = true; 
+
+    % Signal processing parameters
     locoDiam_opts{x}.trainFrac = 0.75; % 1; %
     locoDiam_opts{x}.Ncycle = 20;
-    locoDiam_opts{x}.distribution = 'gaussian'; % 'poisson'; %  
-    locoDiam_opts{x}.CVfold = 10;
-    locoDiam_opts{x}.nlamda = 1000;
-    locoDiam_opts{x}.maxit = 5*10^5;
     locoDiam_opts{x}.minDev = 0.05; 
     locoDiam_opts{x}.minDevFrac = 0.1;
     locoDiam_opts{x}.maxP = 0.05;
     locoDiam_opts{x}.Nshuff = 0;  
     locoDiam_opts{x}.minShuff = 15; 
-    locoDiam_opts{x}.window = [-4,4]; % [0,0]; % [-0.5, 0.5]; % 
-    locoDiam_opts{x}.lopo = true; %false; %
+    locoDiam_opts{x}.window = [-4,4]; % [0,0]; % [-0.5, 0.5]; %consider temporal shifts this many seconds after/before response
+    locoDiam_opts{x}.lopo = true; %false; %LOPO = Leave One Predictor Out
+
+    % Downsample data to GLMrate target 
     locoDiam_opts{x}.frameRate = expt{x}.scanRate;  % GLMrate; %
-    locoDiam_opts{x}.binSize = 1; %expt{x}.scanRate/GLMrate;
+    locoDiam_opts{x}.binSize = max([1,round(expt{x}.scanRate/GLMrate)]); 
     locoDiam_opts{x}.minShuffFrame = round( locoDiam_opts{x}.frameRate*locoDiam_opts{x}.minShuff );
-    windowFrame = round(locoDiam_opts{x}.window*locoDiam_opts{x}.frameRate);
+    windowFrame = round(locoDiam_opts{x}.window*locoDiam_opts{x}.frameRate); %window(sec)*frameRate
     locoDiam_opts{x}.shiftFrame = windowFrame(1):windowFrame(2);
     locoDiam_opts{x}.maxShift = max( abs(windowFrame) );
     locoDiam_opts{x}.Nshift = numel( locoDiam_opts{x}.shiftFrame );  %Nshift = preCSDOpts(x).Nshift;
-    locoDiam_opts{x}.lags = locoDiam_opts{x}.shiftFrame/locoDiam_opts{x}.frameRate;
+    locoDiam_opts{x}.lags = locoDiam_opts{x}.shiftFrame/locoDiam_opts{x}.frameRate; %[-sec,+sec]
     locoDiam_opts{x}.xVar = 'Time';
-    % {
+
+    % GLMnet parameters - don't change without a good reason
+    locoDiam_opts{x}.distribution = 'gaussian'; % 'poisson'; %  
+    locoDiam_opts{x}.CVfold = 10;
+    locoDiam_opts{x}.nlamda = 1000;
+    locoDiam_opts{x}.maxit = 5*10^5;
+    locoDiam_opts{x}.alpha = 0.01;  % The regularization parameter, default is 0.01
+    locoDiam_opts{x}.standardize = true; 
+
+    % Get locomotion data
+    for runs = expt{x}.runs % flip(expt{x}.runs) % 
+        loco{x}(runs) = GetLocoData( runInfo{x}(runs), 'show',false ); 
+        %plot(loco{x}(regParam.refRun).Vdown)
+    end
+
+    %Get locomotion state
+    if any(cellfun(@isempty, {loco{x}.stateDown})) %isempty(loco{x}.stateDown)
+            try
+                loco{x} = GetLocoState(expt{x}, loco{x}, 'dir',strcat(dataDir, expt{x}.mouse,'\'), 'name',expt{x}.mouse, 'var','velocity', 'show',true); %
+            catch
+                fprintf('\nGetLocoState failed for %s', expt{x}.name)
+            end
+    end
+
     % Concatenate input variables pre-CSD
-    % Define predictors
+    % Define locomotion predictors
     tempVelocityCat = BinDownMean( vertcat(loco{x}(expt{x}.preRuns).Vdown), locoDiam_opts{x}.binSize );
     tempAccelCat = BinDownMean( abs(vertcat(loco{x}(expt{x}.preRuns).Adown)), locoDiam_opts{x}.binSize ); 
     tempStateCat = BinDownMean( vertcat(loco{x}(expt{x}.preRuns).stateDown), locoDiam_opts{x}.binSize );
@@ -95,29 +123,36 @@ for x = xPresent % x3D %
     locoDiam_pred{x}.data = [tempVelocityCat, tempAccelCat, tempStateCat];  
     locoDiam_pred{x}.name = {'Velocity', '|Accel|', 'State'}; % ,'Speed',  'Str-Exp', 'Str-Comp',
     locoDiam_pred{x}.N = size(locoDiam_pred{x}.data,2);
-    for p = flip(1:locoDiam_pred{x}.N), locoDiam_pred{x}.lopo.name{p} = ['No ',locoDiam_pred{x}.name{p}]; end
+    for p = flip(1:locoDiam_pred{x}.N) 
+        locoDiam_pred{x}.lopo.name{p} = ['No ',locoDiam_pred{x}.name{p}]; 
+    end
     
-    %{
     % Set up leave-one-family-out
     locoDiam_pred{x}.fam.col = {}; %{1:4, 5:7}; %{1:2, 3:4, 5:6, 7:8, 9:10, 11:12};  % {1:12};%{1, 2:3, 4:5, 6:7, 8, 9}; 
     locoDiam_pred{x}.fam.N = numel(locoDiam_pred{x}.fam.col); 
     locoDiam_pred{x}.fam.name = {}; %{'All'};%  'Onset Time',
-    %}
+    
+%     Define Response
+%     Vascular diamater data
+%     vesselROIpool = [vesselROI{x}{~cellfun(@isempty, vesselROI{x})}];
+%     bigVesselInd = find(strcmpi({vesselROI{x}{:}.vesselType}, {'A'}) | strcmpi({vesselROI{x}{:}.vesselType}, {'D'})); %Find index of cells containing string A(rtery) and D(ura)
+%     diamPool = [vesselROI{x}(bigVesselInd).diameter]; 
 
-% 
-%     % Define response
-%     %vesselROIpool = [vesselROI{x}{:}];  
-%     %diamPool = [vesselROIpool.diameter];
-%     %allDiam = cat(1, diamPool.um_gauss)';
-%     diamResp = BinDownMean( allDiamZ, locoDiam_opts{x}.binSize ); % allDiam 
-%     locoDiam_resp{x}.data = BinDownMean( diamResp, locoDiam_opts{x}.binSize ); 
-%     locoDiam_resp{x}.N = size(locoDiam_resp{x}.data, 2); 
-%     locoDiam_resp{x}.name = sprintfc('Diameter %i', 1:locoDiam_resp{x}.N);
-% 
-%     % Remove scans with missing data 
-%     nanFrame = find(any(isnan([locoDiam_pred{x}.data, locoDiam_resp{x}.data]),2)); % find( isnan(sum(pred(x).data,2)) ); 
+    % Define Response
+    vesselROIpool = [vesselROI{x}{:}];
+    diamPool = [vesselROIpool.diameter];
+    allDiam = cat(1, diamPool.um_lp)';
+    allDiamZ = zscore(allDiam, [], 1);
+    diamResp = BinDownMean( allDiam, locoDiam_opts{x}.binSize ); % allDiamZ
+    locoDiam_resp{x}.data = diamResp; 
+    locoDiam_resp{x}.N = size(locoDiam_resp{x}.data, 2); 
+    locoDiam_resp{x}.name = sprintfc('Diameter %i', 1:locoDiam_resp{x}.N);
+ 
+    % Remove scans with missing data 
+    nanFrame = find(any(isnan([locoDiam_pred{x}.data, locoDiam_resp{x}.data]),2)); % find( isnan(sum(pred(x).data,2)) ); 
     fprintf('\nRemoving %i NaN-containing frames', numel(nanFrame));
-    locoDiam_pred{x}.data(nanFrame,:) = []; locoDiam_resp{x}.data(nanFrame,:) = [];
+    locoDiam_pred{x}.data(nanFrame,:) = []; 
+    locoDiam_resp{x}.data(nanFrame,:) = [];
 
     % Run the GLM
     locoDiam_opts{x}.load = true; % false; % 
@@ -125,6 +160,8 @@ for x = xPresent % x3D %
     [locoDiam_result{x}, locoDiam_summary{x}, ~, locoDiam_pred{x}, locoDiam_resp{x}] = GLMparallel(locoDiam_pred{x}, locoDiam_resp{x}, locoDiam_opts{x}); 
     %locoDiam_summary{x} = SummarizeGLM(locoDiam_result{x}, locoDiam_pred{x}, locoDiam_resp{x}, locoDiam_opts{x});
 end
+
+
 %%
 for x = xPresent
     locoDiam_opts{x}.rShow = 1:sum(NvesselROI{x}); %1:locoDiam_resp{x}.N; % 1:LocoDeform_resp{x}.N; %NaN;
