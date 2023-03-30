@@ -35,6 +35,18 @@ vesselROI = cell(1,Nexpt);
 NvesselROI = cell(1,Nexpt); 
 tifStackMax = cell(1,Nexpt);
 
+%% Set GLM variables
+locoDiam_pred = cell(1,Nexpt); %predictors
+locoDiam_resp = cell(1,Nexpt); %response
+locoDiam_opts = cell(1,Nexpt); %options
+locoDiam_result = cell(1,Nexpt); 
+locoDiam_summary = cell(1,Nexpt);
+
+GLMname = 'locoDiam';
+GLMrate = 15.49/1; %15.49/16 %number of planes, it matches the slowest sampling rate
+
+figDir = 'D:\MATLAB\Figures\GLM_Vasculature\';  % CSD figures\
+mkdir( figDir );
 
 %% Use GLM to assess contribution of different variables
 locoDiam_pred = cell(1,Nexpt); locoDiam_resp = cell(1,Nexpt); locoDiam_opts = cell(1,Nexpt); locoDiam_result = cell(1,Nexpt); locoDiam_summary = cell(1,Nexpt);
