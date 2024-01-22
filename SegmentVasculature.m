@@ -14,7 +14,7 @@ review = IP.Results.review;
 % Determine which channel to segment
 if ~isfield(expt, 'vascChan')
     warning('vascChan not specified, set to red by default')
-    vascChan = 'green'; 
+    vascChan = 'red'; 
 else
     vascChan = expt.vascChan; 
 end
@@ -26,7 +26,9 @@ if exist(vessPath, 'file') && ~overwrite
     fprintf('\nLoading %s', vessPath);
     load(vessPath, 'vesselROI','NvesselROI', 'tifStackMax');
 else
-    tifStackMax = cell(1,projParam.Nz); vesselROI = cell(1,projParam.Nz); NvesselROI = zeros(1,projParam.Nz);
+    tifStackMax = cell(1,projParam.Nz); 
+    vesselROI = cell(1,projParam.Nz); 
+    NvesselROI = zeros(1,projParam.Nz);
 end
 
 % Draw vessel ROIs and estimate diameters
@@ -46,7 +48,11 @@ if expt.Nplane > 1
         tifStack = loadtiff(catPath);
         tifStackMax{Z} = max(tifStack, [], 3);
         [vesselROI{Z}, NvesselROI(Z)] = MakeVesselROI( tifStackMax{Z} );
-        for roi = 1:NvesselROI(Z),  vesselROI{Z}(roi).z = projParam.z{Z};  end
+
+        for roi = 1:NvesselROI(Z)  
+            vesselROI{Z}(roi).z = projParam.z{Z};  
+        end
+
         vesselROI{Z} = GetVesselProfile(vesselROI{Z}, tifStackMax{Z}, 'max');
         vesselROI{Z} = GetVesselProfile(vesselROI{Z}, tifStack);
 
@@ -59,13 +65,17 @@ else
         if expt.Nruns == 1
             catPath = projParam.path.run.raw.z{1,vascChanInd,1}; % projParam.path.run.reg.z(runs,:,Z)
         else
-            catPath = projParam.path.cat.reg.z{2,vascChanInd,1}; %#ok<FNDSB>
+            catPath = projParam.path.cat.reg.z{1,vascChanInd,1}; %#ok<FNDSB>
         end
         disp(catPath);
         tifStack = loadtiff(catPath);
         tifStackMax{1} = max(tifStack, [], 3);
         [vesselROI{1}, NvesselROI(1)] = MakeVesselROI( tifStackMax{1} );
-        for roi = 1:NvesselROI,  vesselROI{1}(roi).z = projParam.z{1};  end
+
+        for roi = 1:NvesselROI  
+            vesselROI{1}(roi).z = projParam.z{1};  
+        end
+        
         vesselROI{1} = GetVesselProfile(vesselROI{1}, tifStackMax{1}, 'max');
         vesselROI{1} = GetVesselProfile(vesselROI{1}, tifStack);
 
@@ -88,3 +98,6 @@ if review
     end
 end
 end
+
+
+%savefig = {}
