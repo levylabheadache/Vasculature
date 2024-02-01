@@ -1,9 +1,9 @@
 clear; clc; close all;
-dataDir = 'D:\2photon\Simone\Simone_Vasculature\'; % 'D:\2photon\Simone\'; %'C:\2photon';
+dataDir = 'D:\2photon\Simone\Simone_Macrophages\'; % 'D:\2photon\Simone\'; %'C:\2photon';
 dataSet = 'Vasculature'; %'Afferents'; %  'Neutrophil_Simone'; %'Pollen'; %'Astrocyte'; %    'NGC'; % 'Neutrophil'; % 'Vasculature %'Macrophage'
 
 % Parse data table
-dataTablePath = 'R:\Levy Lab\2photon\ImagingDatasets.xlsx'; % 'R:\Levy Lab\2photon\ImagingDatasetsSimone2.xlsx'; %'D:\MATLAB\ImagingDatasets.xlsx'; % 'D:\MATLAB\NGCdata.xlsx';  Simone
+dataTablePath = 'R:\Levy Lab\2photon\ImagingDatasets_Simone_240124.xlsx'; % 'R:\Levy Lab\2photon\ImagingDatasetsSimone2.xlsx'; %'D:\MATLAB\ImagingDatasets.xlsx'; % 'D:\MATLAB\NGCdata.xlsx';  Simone
 dataTable = readcell(dataTablePath, 'sheet',dataSet);  % 'NGC', ''
 colNames = dataTable(1,:); dataTable(1,:) = [];
 dataCol = struct('mouse',find(contains(colNames, 'Mouse')), 'date',find(contains(colNames, 'Date')), 'FOV',find(contains(colNames, 'FOV')), 'vascChan',find(contains(colNames, 'VascChan')),...
@@ -21,8 +21,8 @@ NvesselROI = cell(1,Nexpt);
 tifStackMax = cell(1,Nexpt);
 
 % Choose which subset to  process
-xGLM = [18,22,24,30:32];
-xPresent = 51; % xGLM; % [27,28]; %[18,22,24,30:32];  % , 19  1,   flip(100:102); %45:47; % [66:69]; %6;  62,64,
+%xGLM = [18,22,24,30:32];
+xPresent = 268; % xGLM; flip(100:102); %45:47; % [66:69]; %6;  62,64,
 Npresent = numel(xPresent);
 
 for x = xPresent  %30 %x2D % x2Dcsd % x3D %% 51
@@ -55,7 +55,7 @@ for x = xPresent  %30 %x2D % x2Dcsd % x3D %% 51
     for Z = find(NvesselROI{x})
         colorMat = distinguishable_colors(NvesselROI{x}(Z));
         close all;
-        figure;
+        DiameterTime = figure;
         subplot(1,2,1);
         imshow(tifStackMax{x}{Z}, []);
         impixelinfo;
@@ -85,7 +85,7 @@ for x = xPresent  %30 %x2D % x2Dcsd % x3D %% 51
         pause;
     end
     
-    
+     
 
 %Combine vessels of different Z planes
     vesselROI{x} = [vesselROI{x}{~cellfun(@isempty, vesselROI{x})}];
