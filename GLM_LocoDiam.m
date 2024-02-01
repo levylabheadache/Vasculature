@@ -4,19 +4,19 @@
 clear; clc; close all;
 
 % TODO -- Set the directory of where animal folders are located
-dataDir =  'D:\2photon\Simone\Simone_Vasculature\'; %  'D:\2photon\Simone\Simone_Macrophages\'; %  'Z:\2photon\Simone\Simone_Macrophages\'; %  'D:\2photon\'; %  'D:\2photon\Simone\'; % 
+dataDir =  'D:\2photon\Simone\Simone_Macrophages\'; % 'D:\2photon\Simone\Simone_Vasculature\'; 'D:\2photon\Simone\Simone_Macrophages\'; %  
 
 % PARSE DATA TABLE 
 
 % TODO --- Set excel sheet
-dataSet = 'Vasculature'; %'Macrophage'; 'AffCSD'; 'Pollen'; 'Vasculature'; %  'Astrocyte'; %  'Anatomy'; %  'Neutrophil_Simone'; %  'NGC'; % 'Neutrophil'; % 'Afferents'
+dataSet = 'Vasculature'; %'Macrophage'; 'AffCSD'; 'Pollen'; 'Vasculature'; %  'Astrocyte'; %  'Anatomy'; %  'Neutrophil_Simone'; % 'Afferents'
 [regParam, projParam] = DefaultProcessingParams(dataSet); % get default parameters for processing various types of data
 
-regParam.method = 'affine'; %rigid 
-regParam.name = 'affine'; %rigid  
+regParam.method = 'translation'; %rigid 
+regParam.name = 'translation'; %rigid  
 
 % TODO --- Set data spreadsheet directory
-dataTablePath = 'R:\Levy Lab\2photon\ImagingDatasets.xlsx'; % 'R:\Levy Lab\2photon\ImagingDatasetsSimone2.xlsx';
+dataTablePath = 'R:\Levy Lab\2photon\ImagingDatasets_Simone_240124.xlsx'; % 'R:\Levy Lab\2photon\ImagingDatasetsSimone2.xlsx';
 dataTable = readcell(dataTablePath, 'sheet',dataSet);  % 'NGC', ''
 colNames = dataTable(1,:); dataTable(1,:) = [];
 dataCol = struct('mouse',find(contains(colNames, 'Mouse')), 'date',find(contains(colNames, 'Date')), 'FOV',find(contains(colNames, 'FOV')), 'vascChan',find(contains(colNames, 'VascChan')),...
@@ -29,10 +29,11 @@ dataTable(:,dataCol.date) = cellfun(@num2str, dataTable(:,dataCol.date), 'Unifor
 expt = cell(1,Nexpt); 
 runInfo = cell(1,Nexpt); 
 Tscan = cell(1,Nexpt); 
-loco = cell(1,Nexpt); % Tcat = cell(1,Nexpt);
+loco = cell(1,Nexpt); 
+Tcat = cell(1,Nexpt);
 vesselROI = cell(1,Nexpt); 
 NvesselROI = cell(1,Nexpt); 
-tifStackMax = cell(1,Nexpt);
+tifStackMax = cell(1,Nexpt); 
 
 % Use GLM to assess contribution of different variables
 locoDiam_pred = cell(1,Nexpt); %predictors
@@ -42,7 +43,7 @@ locoDiam_result = cell(1,Nexpt);
 locoDiam_summary = cell(1,Nexpt);
 
 % TODO --- Specify xPresent - row number(X) within excel sheet
-xPresent = 74; %[18,22,24,30:32]; % flip(100:102); %45:47; % [66:69];
+xPresent = 268; %[18,22,24,30:32]; % flip(100:102); %45:47; % [66:69];
 Npresent = numel(xPresent);
 overwrite = false;
 
@@ -51,7 +52,7 @@ figDir = 'D:\MATLAB\Figures\GLM_Vasculature\';  % CSD figures\
 mkdir( figDir );
 
 % Set GLM rate
-GLMrate = 15.49/1; %15.49/16 %number of planes, it matches the slowest sampling rate
+GLMrate = 1; % 15.49/1; % 1; %15.49/1; %15.49/16 %number of planes, it matches the slowest sampling rate
 
 for x = xPresent % x3D % 
 
@@ -119,6 +120,11 @@ for x = xPresent % x3D %
     tempAccelCat = BinDownMean( abs(vertcat(loco{x}(expt{x}.preRuns).Adown)), locoDiam_opts{x}.binSize ); 
     tempStateCat = BinDownMean( vertcat(loco{x}(expt{x}.preRuns).stateDown), locoDiam_opts{x}.binSize );
     
+    %for single runs ONLY - adjust frame number of kinetics to match vascular projection
+    tempVelocityCat = tempVelocityCat(2:end-1); 
+    tempAccelCat = tempAccelCat(2:end-1);
+    tempStateCat = tempStateCat(2:end-1);
+    
     locoDiam_pred{x} = struct('data',[], 'name',[], 'N',NaN, 'TB',[], 'lopo',[], 'fam',[]); 
     locoDiam_pred{x}.data = [tempVelocityCat, tempAccelCat, tempStateCat];  
     locoDiam_pred{x}.name = {'Velocity', '|Accel|', 'State'}; % ,'Speed',  'Str-Exp', 'Str-Comp',
@@ -143,8 +149,8 @@ for x = xPresent % x3D %
     diamPool = [vesselROIpool.diameter];
     allDiam = cat(1, diamPool.um_lp)';
     allDiamZ = zscore(allDiam, [], 1);
-    diamResp = BinDownMean( allDiam, locoDiam_opts{x}.binSize ); % allDiamZ
-    locoDiam_resp{x}.data = diamResp; 
+    %diamResp = BinDownMean( allDiamZ, locoDiam_opts{x}.binSize ); % allDiamZ
+    locoDiam_resp{x}.data = allDiamZ;  %diamResp SCN 240102
     locoDiam_resp{x}.N = size(locoDiam_resp{x}.data, 2); 
     locoDiam_resp{x}.name = sprintfc('Diameter %i', 1:locoDiam_resp{x}.N);
  
@@ -162,13 +168,12 @@ for x = xPresent % x3D %
 end
 
 
-%%
+%% Show results
 for x = xPresent
     locoDiam_opts{x}.rShow = 1:sum(NvesselROI{x}); %1:locoDiam_resp{x}.N; % 1:LocoDeform_resp{x}.N; %NaN;
     locoDiam_opts{x}.xVar = 'Time';
     ViewGLM(locoDiam_pred{x}, locoDiam_resp{x}, locoDiam_opts{x}, locoDiam_result{x}, locoDiam_summary{x}); %GLMresultFig = 
 end
-
 
 %% Compare GLM to data for each experiment
 close all; clearvars sp SP;
@@ -177,7 +182,8 @@ opt = {[0.02,0.07], [0.06,0.03], [0.04,0.02]};  % {[vert, horz], [bottom, top], 
 rightOpt = {[0.1,0.07], [0.1,0.03], [0.04,0.02]};  % {[vert, horz], [bottom, top], [left, right] }\
 jitterWidth = 0.45;
 xAngle = 30;
-Nrow = locoDiam_pred{xPresent(1)}(1).N+1; Ncol = 3;
+Nrow = locoDiam_pred{xPresent(1)}(1).N+1; 
+Ncol = 3;
 spGrid = reshape( 1:Nrow*Ncol, Ncol, Nrow )';
 for x = xPresent
     sp(locoDiam_pred{x}.N+1) = subtightplot(locoDiam_pred{x}.N+1, 3, 1:2, opt{:});
@@ -201,26 +207,33 @@ for x = xPresent
     end
     xlabel('Scan');
     
+    %expt{x}.Nroi = size(diamResp,2); %SCN 231020
+
     subtightplot(3,3,3, rightOpt{:});
     bar([locoDiam_summary{x}.Ngood]/expt{x}.Nroi ); % numel(onStruct(x).fluor.responder),   , numel(rLocoPreFit{x})
     set(gca,'Xtick',1, 'XtickLabel',{'Fit'}, 'box','off'); % 'Loco','Fit','Both'  :3
     ylabel('Fraction of ROI');
     ylim([0,1]);
     
+
+    %lopo
     subtightplot(3,3,6, rightOpt{:});
     JitterPlot( locoDiam_summary{x}.lopo.devFrac(:,locoDiam_summary{x}.rGood)', jitterWidth ); hold on;
     line([0,locoDiam_pred{x}.N+1], [1,1], 'color','k', 'lineStyle','--');
-    xlim([0,locoDiam_pred{x}.N+1]); ylim([0,Inf]); 
-    ylabel('Fraction of total deviance'); title('Leave One Predictor Out (well-fit units only)');
+    xlim([0,locoDiam_pred{x}.N+1]); 
+    ylim([0,Inf]); 
+    ylabel('Fraction of total deviance'); 
+    title('Leave One Predictor Out (well-fit units only)');
     set(gca, 'Xtick',1:locoDiam_pred{x}.N,  'XtickLabel', locoDiam_summary{x}.lopo.name, 'TickDir','out', 'TickLength',[0.003,0], 'TickLabelInterpreter','none', 'box','off' ); 
     xtickangle(xAngle);
     
-    
+    %lofo - locoDiam_summary{x}.lofo - not determined yet
     subtightplot(3,3,9, rightOpt{:});
     JitterPlot( locoDiam_summary{x}.lofo.devFrac(:,locoDiam_summary{x}.rGood)', jitterWidth ); hold on;
     line([0,locoDiam_pred{x}.fam.N]+0.5, [1,1], 'color','k', 'lineStyle','--');
     xlim([0,locoDiam_pred{x}.fam.N]+0.5);
-    ylabel('Fraction of total deviance'); title('Leave One Family Out (well-fit units only)');
+    ylabel('Fraction of total deviance'); 
+    title('Leave One Family Out (well-fit units only)');
     set(gca, 'Xtick',1:locoDiam_pred{x}.fam.N,  'XtickLabel', locoDiam_summary{x}.lofo.name, 'TickDir','out', 'TickLength',[0.003,0], 'TickLabelInterpreter','none', 'box','off' ); 
     xtickangle(xAngle);
     ylim([0,Inf]);
@@ -228,7 +241,9 @@ for x = xPresent
     linkaxes(sp,'x');
     % {
     figPath = sprintf('%s%s_Deviance.tif', figDir, GLMname);
-    if exist(figPath,'file'), delete(figPath); end
+    if exist(figPath,'file') 
+        delete(figPath); 
+    end
     fprintf('\nSaving %s', figPath);
     %export_fig( figPath, '-pdf', '-painters','-q101', '-append', LocoSensitivePrePost ); pause(1);
     %print(PreGLMresults, figPath, '-dtiff' ); 
