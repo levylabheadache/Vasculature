@@ -52,6 +52,13 @@ if expt.Nplane > 1
         for roi = 1:NvesselROI(Z)  
             vesselROI{Z}(roi).z = projParam.z{Z};  
         end
+
+        vesselROI{1} = GetVesselProfile(vesselROI{1}, tifStackMax{1}, 'max');
+        vesselROI{1} = GetVesselProfile(vesselROI{1}, tifStack);
+
+        % Save the results
+        fprintf('\nSaving %s', vessPath);
+        save(vessPath, 'vesselROI','NvesselROI', 'projParam','tifStackMax');
      
     end
 else
