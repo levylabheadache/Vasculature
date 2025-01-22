@@ -16,7 +16,7 @@ regParam.method = 'translation'; %rigid
 regParam.name = 'translation'; %rigid  
 
 % TODO --- Set data spreadsheet directory
-dataTablePath = 'R:\Levy Lab\2photon\ImagingDatasets_Simone_240124.xlsx'; % 'R:\Levy Lab\2photon\ImagingDatasetsSimone2.xlsx';
+dataTablePath = 'R:\Levy Lab\2photon\ImagingDatasets_Simone.xlsx'; % 'R:\Levy Lab\2photon\ImagingDatasetsSimone2.xlsx';
 dataTable = readcell(dataTablePath, 'sheet',dataSet);  % 'NGC', ''
 colNames = dataTable(1,:); dataTable(1,:) = [];
 dataCol = struct('mouse',find(contains(colNames, 'Mouse')), 'date',find(contains(colNames, 'Date')), 'FOV',find(contains(colNames, 'FOV')), 'vascChan',find(contains(colNames, 'VascChan')),...
@@ -43,7 +43,7 @@ locoDiam_result = cell(1,Nexpt);
 locoDiam_summary = cell(1,Nexpt);
 
 % TODO --- Specify xPresent - row number(X) within excel sheet
-xPresent = 268; %[18,22,24,30:32]; % flip(100:102); %45:47; % [66:69];
+xPresent = 263; %[18,22,24,30:32]; % flip(100:102); %45:47; % [66:69];
 Npresent = numel(xPresent);
 overwrite = false;
 
@@ -52,7 +52,7 @@ figDir = 'D:\MATLAB\Figures\GLM_Vasculature\';  % CSD figures\
 mkdir( figDir );
 
 % Set GLM rate
-GLMrate = 1; % 1; %15.49/1; %15.49/16 %number of planes, it matches the slowest sampling rate
+GLMrate = 1; %15.49/16 for 3D data %projParam.rate_target = 1 for 2D data
 
 for x = xPresent % x3D % 
 
@@ -136,12 +136,13 @@ for x = xPresent % x3D %
         tempVelocityCat = BinDownMean( vertcat(loco{x}(expt{x}.preRuns).Vdown), locoDiam_opts{x}.binSize );
         tempAccelCat = BinDownMean( abs(vertcat(loco{x}(expt{x}.preRuns).Adown)), locoDiam_opts{x}.binSize ); 
         tempStateCat = BinDownMean( vertcat(loco{x}(expt{x}.preRuns).stateDown), locoDiam_opts{x}.binSize );
+
         %adjust frames based on Substack used
         tempVelocityCat = tempVelocityCat(200:5599); 
         tempAccelCat = tempAccelCat(200:5599);
         tempStateCat = tempStateCat(200:5599);
     end
-    
+
     locoDiam_pred{x} = struct('data',[], 'name',[], 'N',NaN, 'TB',[], 'lopo',[], 'fam',[]); 
     locoDiam_pred{x}.data = [tempVelocityCat, tempAccelCat, tempStateCat];  
     locoDiam_pred{x}.name = {'Velocity', '|Accel|', 'State'}; % ,'Speed',  'Str-Exp', 'Str-Comp',
@@ -166,7 +167,7 @@ for x = xPresent % x3D %
     diamPool = [vesselROIpool.diameter];
     allDiam = cat(1, diamPool.um_lp)';
     allDiamZ = zscore(allDiam, [], 1);
-    %diamResp = BinDownMean( allDiamZ, locoDiam_opts{x}.binSize ); % allDiam
+    diamResp = BinDownMean( allDiamZ, locoDiam_opts{x}.binSize ); % allDiam
     locoDiam_resp{x}.data = allDiamZ;  %diamResp SCN 240102
     locoDiam_resp{x}.N = size(locoDiam_resp{x}.data, 2); 
     locoDiam_resp{x}.name = sprintfc('Diameter %i', 1:locoDiam_resp{x}.N);
@@ -183,7 +184,6 @@ for x = xPresent % x3D %
     [locoDiam_result{x}, locoDiam_summary{x}, ~, locoDiam_pred{x}, locoDiam_resp{x}] = GLMparallel(locoDiam_pred{x}, locoDiam_resp{x}, locoDiam_opts{x}); 
     %locoDiam_summary{x} = SummarizeGLM(locoDiam_result{x}, locoDiam_pred{x}, locoDiam_resp{x}, locoDiam_opts{x});
 end
-
 
 %% Show results
 for x = xPresent

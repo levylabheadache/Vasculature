@@ -14,13 +14,13 @@ radonFactor = 0.67;
 for roi = 1:Nroi
     inpolyScan = inpolygon(X, Y, vesselROI(roi).boxPosition.xy(:,1), vesselROI(roi).boxPosition.xy(:,2));
     if Nscan == 1 % max projection only
-        vesselROI(roi).boxIm = tifStack(:,:,1).*uint16(inpolyScan); % figure; imshow(vesselROI(roi).boxIm, []); impixelinfo;
+        vesselROI(roi).boxIm = tifStack(:,:,1).*uint16(inpolyScan); %*uint16(inpolyScan)% figure; imshow(vesselROI(roi).boxIm, []); impixelinfo;
         vesselROI(roi).boxRadon = radon(inpolyScan, vesselROI(roi).projectionAngle); % use this to set the limits for subsequent curve fitting     figure; plot( vesselROI(roi).boxRadon )
         % Restrict analysis to range (in radon projection space) where there are a useful number of pixels (ie  >= radonFactor of max)    
         vesselROI(roi).radonRange = find(vesselROI(roi).boxRadon >= radonFactor*max(vesselROI(roi).boxRadon), 1):find(vesselROI(roi).boxRadon >= radonFactor*max(vesselROI(roi).boxRadon), 1, 'last');
     end
     for scan = 1:Nscan
-        boxedScan = tifStack(:,:,scan).*uint16(inpolyScan); % imshow(boxedScan, [])
+        boxedScan = tifStack(:,:,scan).*uint16(inpolyScan); %*uint16(inpolyScan) % imshow(boxedScan, [])
         boxedRadon = radon(boxedScan, vesselROI(roi).projectionAngle); % note: radon transform integrates (sums) over all pixels, not an average
         boxedRadon([1:vesselROI(roi).radonRange(1)-1, vesselROI(roi).radonRange(end)+1:end]) = NaN; % suppress values outside the useful range
         vesselROI(roi).(projName)(scan,:) = boxedRadon./vesselROI(roi).boxRadon; % convert from sum to average

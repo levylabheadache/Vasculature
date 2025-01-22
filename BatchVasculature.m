@@ -1,9 +1,9 @@
 clear; clc; close all;
-dataDir = 'D:\2photon\Simone\Simone_Macrophages\'; % 'D:\2photon\Simone\'; %'C:\2photon';
-dataSet = 'Vasculature'; %'Afferents'; %  'Neutrophil_Simone'; %'Pollen'; %'Astrocyte'; %    'NGC'; % 'Neutrophil'; % 'Vasculature %'Macrophage'
+dataDir = 'D:\2photon\Simone\Simone_Macrophages\'; 
+dataSet = 'MacrophageBaseline_craniotomy'; %Macrophage'; %'Afferents'; %  'Neutrophil_Simone'; % 'Neutrophil'; % 'Vasculature
 
 % Parse data table
-dataTablePath = 'R:\Levy Lab\2photon\ImagingDatasets_Simone_240124.xlsx'; % 'R:\Levy Lab\2photon\ImagingDatasetsSimone2.xlsx'; %'D:\MATLAB\ImagingDatasets.xlsx'; % 'D:\MATLAB\NGCdata.xlsx';  Simone
+dataTablePath = 'R:\Levy Lab\2photon\ImagingDatasets_Simone_241017.xlsx'; % 'R:\Levy Lab\2photon\ImagingDatasets_Simone.xlsx'; 
 dataTable = readcell(dataTablePath, 'sheet',dataSet);  % 'NGC', ''
 colNames = dataTable(1,:); dataTable(1,:) = [];
 dataCol = struct('mouse',find(contains(colNames, 'Mouse')), 'date',find(contains(colNames, 'Date')), 'FOV',find(contains(colNames, 'FOV')), 'vascChan',find(contains(colNames, 'VascChan')),...
@@ -22,7 +22,7 @@ tifStackMax = cell(1,Nexpt);
 
 % Choose which subset to  process
 %xGLM = [18,22,24,30:32];
-xPresent = 268; % xGLM; flip(100:102); %45:47; % [66:69]; %6;  62,64,
+xPresent = 11; % xGLM; flip(100:102); %45:47; % [66:69]; %6;  62,64,
 Npresent = numel(xPresent);
 
 for x = xPresent  %30 %x2D % x2Dcsd % x3D %% 51
@@ -48,6 +48,8 @@ for x = xPresent  %30 %x2D % x2Dcsd % x3D %% 51
     catInfo(x) = ConcatenateRunInfo(expt{x}, runInfo{x}, 'overwrite',false);  % 'suffix','sbxcat',   
     [~,deform{x}] = GetDeformCat3D( expt{x}, catInfo(x), 'show',true, 'overwrite',false, 'window',find(Tscan{x}{1}<=32,1,'last') ); % true false
     projParam = GenerateExptProjections(expt{x}, catInfo(x), Tscan{x}); %  projParam
+    %specify Z planes to segment the vasculature
+    %projParam.z = {3:5, 12:15};
     [vesselROI{x}, NvesselROI{x}, tifStackMax{x}] = SegmentVasculature(expt{x}, projParam, 'overwrite',false, 'review',false );
     vesselROI{x} = GetVesselDiameter(expt{x}, projParam, vesselROI{x}, 'smooth',4, 'overwrite',false, 'show',true);
     
@@ -68,16 +70,17 @@ for x = xPresent  %30 %x2D % x2Dcsd % x3D %% 51
         subplot(1,2,2)
         for roi = 1:NvesselROI{x}(Z)
             plot(vesselROI{x}{Z}(roi).diameter.um_lp, 'color',colorMat(roi,:)); hold on;
-            line( [1,projParam.totBin], vesselROI{x}{Z}(roi).diameter.um_max*[1,1], 'color',colorMat(roi,:), 'linestyle','--');
+            line( [1,projParam.totBin], vesselROI{x}{Z}(roi).diameter.um_max*[1,1], 'color',colorMat(roi,:), 'linestyle','--'); %[1,projParam.totBin]
         end
         %plot( vertcat(tempDiam.um_gauss)')  % vertcat(Tscan{x}{:}), %plot(vesselROI{Z}.diameter.um, 'k')
         
         xlabel('Scan') %xlabel('Time (sec)'); 
         ylabel('Diameter (\mum)');
         axis tight; axis square;
+        xlim([1, 927]);
 
         % save figure
-        figPath = sprintf('%s%s_DiameterTime', expt{x}.dir, expt{x}.name);
+        figPath = sprintf('%s%s_DiameterTime2', expt{x}.dir, expt{x}.name);
     if ~exist(figPath, 'file') || overwrite
         fprintf('\nSaving %s', figPath);
         saveas(DiameterTime, figPath)

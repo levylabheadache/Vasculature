@@ -1,7 +1,39 @@
 %% Use GLM to assess contribution of different variables
-locoDiamDeform_pred = cell(1,Nexpt); locoDiamDeform_resp = cell(1,Nexpt); locoDiamDeform_opts = cell(1,Nexpt); locoDiamDeform_result = cell(1,Nexpt); locoDiamDeform_summary = cell(1,Nexpt);
+
+% Clear any previous variables in the Workspace and Command Window to start fresh
+clear; clc; close all;
+
+% TODO -- Set the directory of where animal folders are located
+dataDir =  'D:\2photon\Simone\Simone_Macrophages\'; % 'D:\2photon\Simone\Simone_Vasculature\'; 'D:\2photon\Simone\Simone_Macrophages\'; %  
+
+% PARSE DATA TABLE 
+
+% TODO --- Set excel sheet
+dataSet = 'Vasculature'; %'Macrophage'; 'AffCSD'; 'Pollen'; 'Vasculature'; %  'Astrocyte'; %  'Anatomy'; %  'Neutrophil_Simone'; % 'Afferents'
+[regParam, projParam] = DefaultProcessingParams(dataSet); % get default parameters for processing various types of data
+
+regParam.method = 'translation'; %rigid 
+regParam.name = 'translation'; %rigid  
+
+% TODO --- Set data spreadsheet directory
+dataTablePath = 'R:\Levy Lab\2photon\ImagingDatasets_Simone.xlsx'; % 'R:\Levy Lab\2photon\ImagingDatasetsSimone2.xlsx';
+dataTable = readcell(dataTablePath, 'sheet',dataSet);  % 'NGC', ''
+colNames = dataTable(1,:); dataTable(1,:) = [];
+dataCol = struct('mouse',find(contains(colNames, 'Mouse')), 'date',find(contains(colNames, 'Date')), 'FOV',find(contains(colNames, 'FOV')), 'vascChan',find(contains(colNames, 'VascChan')),...
+    'volume',find(contains(colNames, 'Volume')), 'run',find(contains(colNames, 'Runs')), 'Ztop',find(contains(colNames, 'Zbot')), 'Zbot',find(contains(colNames, 'Ztop')), 'csd',find(contains(colNames, 'CSD')), ...
+    'ref',find(contains(colNames, 'Ref')), 'edges',find(contains(colNames, 'Edge')), 'Zproj',find(contains(colNames, 'Zproj')), 'done',find(contains(colNames, 'Done')));
+Nexpt = size(dataTable, 1);
+dataTable(:,dataCol.date) = cellfun(@num2str, dataTable(:,dataCol.date), 'UniformOutput',false);
+
+% Initialize variables
+locoDiamDeform_pred = cell(1,Nexpt); 
+locoDiamDeform_resp = cell(1,Nexpt); 
+locoDiamDeform_opts = cell(1,Nexpt); 
+locoDiamDeform_result = cell(1,Nexpt); 
+locoDiamDeform_summary = cell(1,Nexpt);
 GLMname = 'locoDeformDiam';
 %GLMrate = 15.49/30;
+
 for x = xPresent % x3D % 
     % GLMparallel options
     locoDiamDeform_opts{x}.name = sprintf('%s_%s', expt{x}.name, GLMname); %strcat(expt{x}.name, , '_preCSDglm');
