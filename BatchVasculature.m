@@ -1,10 +1,10 @@
 clear; clc; close all;
 dataDir = 'D:\2photon\Simone\Simone_Macrophages\'; 
-dataSet = 'MacrophageBaseline_craniotomy'; %Macrophage'; %'Afferents'; %  'Neutrophil_Simone'; % 'Neutrophil'; % 'Vasculature
+dataSet = 'Vasculature'; %'MacrophageBaseline_craniotomy'; %Macrophage'; %'Afferents'; %  'Neutrophil_Simone'; % 'Neutrophil'; % 'Vasculature
 
 % Parse data table
-dataTablePath = 'R:\Levy Lab\2photon\ImagingDatasets_Simone_241017.xlsx'; % 'R:\Levy Lab\2photon\ImagingDatasets_Simone.xlsx'; 
-dataTable = readcell(dataTablePath, 'sheet',dataSet);  % 'NGC', ''
+dataTablePath = 'R:\Levy Lab\2photon\ImagingDatasets_Simone.xlsx'; 
+dataTable = readcell(dataTablePath, 'sheet',dataSet);
 colNames = dataTable(1,:); dataTable(1,:) = [];
 dataCol = struct('mouse',find(contains(colNames, 'Mouse')), 'date',find(contains(colNames, 'Date')), 'FOV',find(contains(colNames, 'FOV')), 'vascChan',find(contains(colNames, 'VascChan')),...
     'volume',find(contains(colNames, 'Volume')), 'run',find(contains(colNames, 'Runs')), 'Ztop',find(contains(colNames, 'Zbot')), 'Zbot',find(contains(colNames, 'Ztop')), 'csd',find(contains(colNames, 'CSD')), 'ref',find(contains(colNames, 'Ref')), 'done',find(contains(colNames, 'Done')));
@@ -22,7 +22,7 @@ tifStackMax = cell(1,Nexpt);
 
 % Choose which subset to  process
 %xGLM = [18,22,24,30:32];
-xPresent = 11; % xGLM; flip(100:102); %45:47; % [66:69]; %6;  62,64,
+xPresent = 12; % xGLM; flip(100:102); %45:47; % [66:69]; %6;  62,64,
 Npresent = numel(xPresent);
 
 for x = xPresent  %30 %x2D % x2Dcsd % x3D %% 51

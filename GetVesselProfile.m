@@ -1,5 +1,5 @@
 function vesselROI = GetVesselProfile(vesselROI, tifStack, projName)
-% Opens the tiff file and gets the  vessel projections from the defined polygons
+% Opens the tiff file and gets the vessel projections from the defined polygons
 if nargin > 2 
     projName = sprintf('projection_%s', projName);
 else
